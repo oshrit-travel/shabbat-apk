@@ -39,6 +39,23 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Crash recorder: if the app ever crashes, the reason is shown as a message on the next launch.
+        val cp = getSharedPreferences("crash", Context.MODE_PRIVATE)
+        cp.getString("last", null)?.let {
+            cp.edit().remove("last").apply()
+            android.widget.Toast.makeText(this, "תקלה קודמת: $it", android.widget.Toast.LENGTH_LONG).show()
+        }
+        val prevHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { t, e ->
+            try {
+                val top = e.stackTrace.firstOrNull { it.className.startsWith("com.shabbatclock") }
+                val msg = e.javaClass.simpleName + ": " + (e.message ?: "").take(120) +
+                    (if (top != null) " @" + top.fileName + ":" + top.lineNumber else "")
+                cp.edit().putString("last", msg).commit()
+            } catch (_: Throwable) {}
+            prevHandler?.uncaughtException(t, e)
+        }
+
         // When woken by an alarm, show over the lock screen and turn the screen on.
         @Suppress("DEPRECATION")
         window.addFlags(
@@ -70,6 +87,14 @@ class MainActivity : ComponentActivity() {
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 if (request.url.host == "appassets.androidplatform.net") return false
                 try { startActivity(Intent(Intent.ACTION_VIEW, request.url)) } catch (_: Exception) {}
+                return true
+            }
+
+            override fun onRenderProcessGone(view: WebView, detail: android.webkit.RenderProcessGoneDetail): Boolean {
+                // the page's renderer died (e.g. out of memory): reload instead of taking the whole app down
+                android.os.Handler(android.os.Looper.getMainLooper()).post {
+                    try { view.loadUrl("https://appassets.androidplatform.net/assets/index.html") } catch (_: Throwable) {}
+                }
                 return true
             }
 

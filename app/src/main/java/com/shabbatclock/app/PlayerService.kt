@@ -41,7 +41,9 @@ class PlayerService : Service() {
         if (kind == "stop") {
             stopAllSound()
             stopForegroundCompat()
-            stopSelf()
+            // stopSelf(startId) only stops if no newer start request is waiting - otherwise a "song" start that
+            // arrives right after a "stop" would be dropped and Android kills the app for not calling startForeground.
+            stopSelf(startId)
             return START_NOT_STICKY
         }
 
@@ -96,7 +98,7 @@ class PlayerService : Service() {
                 capRunnable = r
                 handler.postDelayed(r, capSec * 1000L)
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             stopMedia()
         }
     }
@@ -229,10 +231,14 @@ class PlayerService : Service() {
             .setContentIntent(open)
             .setFullScreenIntent(open, true) // wakes the screen and opens the clock
         val n = b.build()
-        if (Build.VERSION.SDK_INT >= 29) {
-            startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-        } else {
-            startForeground(NOTIF_ID, n)
+        try {
+            if (Build.VERSION.SDK_INT >= 29) {
+                startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+            } else {
+                startForeground(NOTIF_ID, n)
+            }
+        } catch (e: Throwable) {
+            try { startForeground(NOTIF_ID, n) } catch (_: Throwable) {}
         }
     }
 

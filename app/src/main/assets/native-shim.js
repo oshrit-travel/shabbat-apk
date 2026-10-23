@@ -142,7 +142,26 @@
     } catch (e) {} finally { syncing = false; }
   }
 
-  function cycle() { syncAudio().then(push); }
+  // ---- built-in songs: imported once, only into slots the user hasn't configured ----
+  var SEED_FLAG = 'shabbatClock_defaultSongsSeeded_v2';
+  async function seedDefaultSongs() {
+    try {
+      if (localStorage.getItem(SEED_FLAG) === '1') return;
+      if (typeof importBundledSong !== 'function') return;
+      var allDone = true;
+      for (var i = 0; i < 2; i++) {
+        var slot = SONG_SLOTS[i];
+        var val = getSlotValue(slot) || {};
+        var rec = await loadAudioFile(slot.dbSlot);
+        if (rec || val.source === 'local' || val.id) continue; // user already chose something: never override
+        var okImport = await importBundledSong(slot); // same code path as the "שיר מובנה" button
+        if (!okImport) allDone = false;
+      }
+      if (allDone) localStorage.setItem(SEED_FLAG, '1');
+    } catch (e) {}
+  }
+
+  function cycle() { seedDefaultSongs().then(syncAudio).then(push); }
   setTimeout(cycle, 4000);
   setInterval(cycle, 15000);
 })();

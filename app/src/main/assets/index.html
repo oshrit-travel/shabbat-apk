@@ -716,9 +716,58 @@ function setSlotValue(slot, value){
 function slotDomIds(slot){
   const p = "slot_"+slot.key+"_";
   return {
-    ytPill: p+"yt", localPill: p+"local",
+    ytPill: p+"yt", localPill: p+"local", builtinPill: p+"builtin",
     ytInput: p+"ytinput", fileInput: p+"file", fileStatus: p+"filestatus"
   };
+}
+
+/* Bundled songs: the files sit next to this page (songs/friday.mp3, songs/motzash.mp3; inside the
+   Android app they are packaged in the app). Choosing "שיר מובנה" imports the bundled file into the
+   same local-file storage everything else already uses, so playback needs no extra code. */
+const BUNDLED_SONGS = {
+  friday:  { url:"songs/friday.mp3",  name:"שיר כניסת שבת (מובנה).mp3" },
+  motzash: { url:"songs/motzash.mp3", name:"שיר מוצאי שבת (מובנה).mp3" }
+};
+/* Single-file build: when a JSON script element with id "bundledSongsData" exists, the songs come
+   from it as data URIs. Otherwise they are fetched from songs/ next to the page (Android app assets). */
+function bundledSongSource(slot, b){
+  try{
+    const el = document.getElementById("bundledSongsData");
+    if(el && el.textContent){
+      const d = JSON.parse(el.textContent);
+      if(d && d[slot.key]) return d[slot.key];
+    }
+  }catch(e){}
+  return b.url;
+}
+function isBundledSelected(slot, val){
+  const b = BUNDLED_SONGS[slot.key];
+  return !!(b && !slot.chag && val && val.source === "local" && val.filename === b.name);
+}
+async function importBundledSong(slot){
+  const b = BUNDLED_SONGS[slot.key];
+  if(!b || slot.chag) return false;
+  const ids = slotDomIds(slot);
+  const wrap = document.getElementById(ids.fileInput+"_wrap");
+  const status = document.getElementById(ids.fileStatus);
+  if(wrap) wrap.classList.remove("hidden");
+  if(status) status.textContent = "טוען את השיר המובנה...";
+  try{
+    const res = await fetch(bundledSongSource(slot, b));
+    if(!res.ok) throw new Error("http " + res.status);
+    const blob = await res.blob();
+    if(!blob || !blob.size) throw new Error("empty");
+    const mime = (blob.type && blob.type.indexOf("audio") === 0) ? blob.type : "audio/mpeg";
+    await saveAudioFile(slot.dbSlot, new File([blob], b.name, { type: mime }));
+    const val = getSlotValue(slot) || {};
+    setSlotValue(slot, { source:"local", id: val.id || "", filename: b.name });
+    saveSettings();
+    renderSlotUI(slot);
+    return true;
+  }catch(err){
+    if(status) status.textContent = "טעינת השיר המובנה נכשלה. נסה שוב, או בחר קובץ מהמכשיר.";
+    return false;
+  }
 }
 
 function buildSlotUI(container, slot){
@@ -730,6 +779,7 @@ function buildSlotUI(container, slot){
     <div class="flex gap-2">
       <div id="${ids.ytPill}" class="radio-pill flex-1 text-center rounded-lg py-1.5 text-xs">YouTube</div>
       <div id="${ids.localPill}" class="radio-pill flex-1 text-center rounded-lg py-1.5 text-xs">קובץ מהמכשיר</div>
+      ${BUNDLED_SONGS[slot.key] && !slot.chag ? `<div id="${ids.builtinPill}" class="radio-pill flex-1 text-center rounded-lg py-1.5 text-xs">שיר מובנה</div>` : ""}
     </div>
     <input id="${ids.ytInput}" type="text" placeholder="קישור או ID מיוטיוב" class="w-full rounded-xl px-3 py-2 text-sm mt-2">
     <div id="${ids.fileInput}_wrap" class="hidden mt-2">
@@ -745,8 +795,11 @@ function renderSlotUI(slot){
   const ids = slotDomIds(slot);
   const val = getSlotValue(slot) || { source:"youtube", id:"", filename:"" };
   document.getElementById(ids.ytInput).value = val.id || "";
+  const bundled = isBundledSelected(slot, val);
   document.getElementById(ids.ytPill).classList.toggle("selected", val.source !== "local");
-  document.getElementById(ids.localPill).classList.toggle("selected", val.source === "local");
+  document.getElementById(ids.localPill).classList.toggle("selected", val.source === "local" && !bundled);
+  const bp = document.getElementById(ids.builtinPill);
+  if(bp) bp.classList.toggle("selected", bundled);
   document.getElementById(ids.fileInput+"_wrap").classList.toggle("hidden", val.source !== "local");
   document.getElementById(ids.fileStatus).textContent = val.filename ? ("קובץ נטען: " + val.filename) : "לא הועלה קובץ";
 }
@@ -775,6 +828,8 @@ function bindSlotUI(slot){
     setSlotValue(slot, { ...val, source:"local" });
     renderSlotUI(slot);
   };
+  const bpEl = document.getElementById(ids.builtinPill);
+  if(bpEl) bpEl.onclick = ()=>{ importBundledSong(slot); };
   document.getElementById(ids.fileInput).onchange = async (e)=>{
     const file = e.target.files && e.target.files[0];
     if(!file) return;
@@ -793,7 +848,9 @@ function bindSlotUI(slot){
 function readSlotFromForm(slot){
   const ids = slotDomIds(slot);
   const ytVal = document.getElementById(ids.ytInput).value;
-  const source = document.getElementById(ids.localPill).classList.contains("selected") ? "local" : "youtube";
+  const bpSel = document.getElementById(ids.builtinPill);
+  const source = (document.getElementById(ids.localPill).classList.contains("selected") ||
+                  (bpSel && bpSel.classList.contains("selected"))) ? "local" : "youtube";
   const prev = getSlotValue(slot) || {};
   setSlotValue(slot, {
     source,
@@ -920,8 +977,11 @@ async function fetchWeeklyTimes(){
     times.parasha = sanitizeParashaName(parashaItem ? (parashaItem.hebrew || parashaItem.title) : "");
     times.parashaEng = parashaItem ? parashaItem.title : "";
 
-    const fridayDate = data.range ? data.range.start : candlesItem.date.slice(0,10);
-    const saturdayDate = data.range ? data.range.end : havdalahItem.date.slice(0,10);
+    // Dates come from the candle/havdalah items themselves (local date in the item's own ISO string),
+    // NOT from data.range — range.end can land on Sunday in a post-Shabbat sync, which made
+    // Rabbeinu Tam jump a full 24 hours.
+    const fridayDate = candlesItem.date.slice(0,10);
+    const saturdayDate = havdalahItem.date.slice(0,10);
 
     const [sunFri, sunSat, fridayIsYomTov] = await Promise.all([
       fetchZmanimSunset(city, fridayDate),
@@ -931,15 +991,16 @@ async function fetchWeeklyTimes(){
 
     times.sunsetFriday = sunFri;
     const rtMinutes = RT_METHOD_MINUTES[settings.rtMethod] || 72;
-    times.rabbeinuTam = sunSat ? new Date(sunSat.getTime() + rtMinutes*60000) : null;
+    const prevRT = times.rabbeinuTam;
     times.fridayIsYomTov = fridayIsYomTov;
 
     const corrMin = settings.manualCorrectionMinutes || 0;
     if(corrMin !== 0){
       times.candleLighting = new Date(times.candleLighting.getTime() + corrMin*60000);
       times.havdalah = new Date(times.havdalah.getTime() + corrMin*60000);
-      if(times.rabbeinuTam) times.rabbeinuTam = new Date(times.rabbeinuTam.getTime() + corrMin*60000);
     }
+    const rtCalc = sunSat ? new Date(sunSat.getTime() + (rtMinutes + corrMin)*60000) : null;
+    times.rabbeinuTam = pickRabbeinuTam(rtCalc, times.havdalah, prevRT);
 
     timesAreStale = false;
     resetWeekFlags();
@@ -986,6 +1047,16 @@ async function fetchZmanimSunset(city, dateStr){
     const data = await res.json();
     return (data.times && data.times.sunset) ? new Date(data.times.sunset) : null;
   }catch(e){ return null; }
+}
+
+/* Sanity check: Rabbeinu Tam must fall after Havdalah and within 3 hours of it. A calculated value
+   outside that window is a bad lookup (wrong day) — fall back to the previous good value, else none. */
+function pickRabbeinuTam(calc, havdalah, prev){
+  const ok = d => d instanceof Date && !isNaN(d) && havdalah instanceof Date &&
+    d.getTime() > havdalah.getTime() && d.getTime() - havdalah.getTime() <= 3*3600*1000;
+  if(ok(calc)) return calc;
+  if(ok(prev)) return prev;
+  return null;
 }
 
 async function checkFridayIsYomTov(dateStr){
