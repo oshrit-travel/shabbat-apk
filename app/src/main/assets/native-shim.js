@@ -161,6 +161,11 @@
     } catch (e) {}
   }
 
+  // tell the page whether the native player is playing a song (drives the "mute" button)
+  setInterval(function () {
+    try { window.__nativeSongPlaying = !!B.isSongPlaying(); if (typeof updateMuteBtn === 'function') updateMuteBtn(); } catch (e) {}
+  }, 1000);
+
   function cycle() { seedDefaultSongs().then(syncAudio).then(push); }
   setTimeout(cycle, 4000);
   setInterval(cycle, 15000);

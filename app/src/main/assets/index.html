@@ -154,6 +154,7 @@
   <div id="ytPlayer"></div>
 </div>
 <audio id="localAudioPlayer" class="hidden"></audio>
+<button id="muteSongBtn" type="button" style="display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;padding:.7rem 1.4rem;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(20,20,30,.92);color:#fff;font:600 1rem/1 system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.45);cursor:pointer;">🔇 השתק שיר</button>
 
 <!-- ============ MAIN DASHBOARD ============ -->
 <main class="relative z-10 w-screen flex flex-col px-5 sm:px-6 py-6 sm:py-8 max-w-5xl mx-auto overflow-y-auto scrollbar-slim" style="min-height: var(--app-vh, 100dvh);">
@@ -1355,13 +1356,45 @@ function stopLocalAudio(){
    to know which. */
 function playSongSlot(slotValue){
   if(!slotValue) return;
-  if(slotValue.source === "local"){ playLocalAudio(slotValue.dbSlot || slotValue.id); }
-  else if(slotValue.id){ playYouTube(slotValue.id); }
+  if(slotValue.source === "local"){ songSession = true; songSessionAt = Date.now(); playLocalAudio(slotValue.dbSlot || slotValue.id); }
+  else if(slotValue.id){ songSession = true; songSessionAt = Date.now(); playYouTube(slotValue.id); }
+  updateMuteBtn();
 }
 function stopAllPlayback(){
   stopYouTube();
   stopLocalAudio();
+  songSession = false;
+  updateMuteBtn();
 }
+
+/* "השתק שיר" button: visible only while a song is actually playing (page player, YouTube, or the Android app's native player). */
+let songSession = false, songSessionAt = 0;
+function isSongPlayingNow(){
+  if(window.__nativeSongPlaying) return true;
+  if(!songSession) return false;
+  try{
+    const el = document.getElementById("localAudioPlayer");
+    if(el && !el.paused && !el.ended && el.currentTime > 0 && !isSirenFilePlaying()) return true;
+  }catch(e){}
+  try{
+    if(ytReady && ytPlayer && typeof ytPlayer.getPlayerState === "function" && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) return true;
+  }catch(e){}
+  return false;
+}
+function isSirenFilePlaying(){ return false; }
+function updateMuteBtn(){
+  const b = document.getElementById("muteSongBtn");
+  if(!b) return;
+  let playing = isSongPlayingNow();
+  if(!playing && songSession && Date.now() - songSessionAt > 8000) songSession = false; // song ended on its own
+  if(!playing && songSession) playing = true; // still starting up (grace period)
+  b.style.display = playing ? "block" : "none";
+}
+(function(){
+  const b = document.getElementById("muteSongBtn");
+  if(b) b.addEventListener("click", ()=>{ stopAllPlayback(); window.__nativeSongPlaying = false; updateMuteBtn(); });
+  setInterval(updateMuteBtn, 1000);
+})();
 
 /* ========================================================================
    SIREN — continuous flat tone, short fade edges only, adjustable duration/source

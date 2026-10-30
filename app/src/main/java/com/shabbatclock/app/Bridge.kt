@@ -34,6 +34,9 @@ class Bridge(private val ctx: Context) {
     fun chimeNow() = start("chime", "", 0, 0, "תזכורת", "")
 
     @JavascriptInterface
+    fun isSongPlaying(): Boolean = PlayerService.songPlaying
+
+    @JavascriptInterface
     fun stopAll() {
         try { ctx.startService(Intent(ctx, PlayerService::class.java).putExtra("kind", "stop")) } catch (_: Exception) {}
     }

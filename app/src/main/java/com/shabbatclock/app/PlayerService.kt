@@ -49,7 +49,8 @@ class PlayerService : Service() {
 
         goForeground(
             intent?.getStringExtra("title").orEmpty().ifEmpty { "שעון שבת" },
-            intent?.getStringExtra("body").orEmpty()
+            intent?.getStringExtra("body").orEmpty(),
+            kind == "song" || player != null
         )
         acquireWake()
 
@@ -92,6 +93,7 @@ class PlayerService : Service() {
             mp.setVolume(if (fade) 0f else 1f, if (fade) 0f else 1f)
             mp.start()
             player = mp
+            songPlaying = fade
             if (fade) fadeIn(mp, 2500)
             if (capSec > 0) {
                 val r = Runnable { stopMedia(); scheduleFinishCheck() }
@@ -118,6 +120,7 @@ class PlayerService : Service() {
         try { player?.stop() } catch (_: Exception) {}
         try { player?.release() } catch (_: Exception) {}
         player = null
+        songPlaying = false
     }
 
     private fun makeTrack(data: ShortArray): AudioTrack {
@@ -209,7 +212,7 @@ class PlayerService : Service() {
         } catch (_: Exception) {}
     }
 
-    private fun goForeground(title: String, body: String) {
+    private fun goForeground(title: String, body: String, withMute: Boolean) {
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= 26 && nm.getNotificationChannel(CHANNEL) == null) {
             val ch = NotificationChannel(CHANNEL, "אירועי שבת", NotificationManager.IMPORTANCE_HIGH)
@@ -230,6 +233,17 @@ class PlayerService : Service() {
             .setCategory(Notification.CATEGORY_ALARM)
             .setContentIntent(open)
             .setFullScreenIntent(open, true) // wakes the screen and opens the clock
+        if (withMute) {
+            val stopPi = PendingIntent.getService(
+                this, 1, Intent(this, PlayerService::class.java).putExtra("kind", "stop"),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            b.addAction(
+                Notification.Action.Builder(
+                    android.graphics.drawable.Icon.createWithResource(this, R.drawable.ic_stat), "השתק", stopPi
+                ).build()
+            )
+        }
         val n = b.build()
         try {
             if (Build.VERSION.SDK_INT >= 29) {
@@ -243,6 +257,7 @@ class PlayerService : Service() {
     }
 
     override fun onDestroy() {
+        songPlaying = false
         stopAllSound()
         releaseWake()
         handler.removeCallbacksAndMessages(null)
@@ -252,5 +267,6 @@ class PlayerService : Service() {
     companion object {
         const val CHANNEL = "shabbat_events"
         const val NOTIF_ID = 4001
+        @Volatile var songPlaying = false
     }
 }
