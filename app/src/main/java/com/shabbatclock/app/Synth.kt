@@ -22,22 +22,22 @@ object Synth {
         return out
     }
 
-    /** 3 x (880Hz, 660Hz) every 0.7s. */
+    /** Soft harp-like arpeggio: 4 rising plucked notes (C5 E5 G5 C6) that ring out, about 3 seconds. */
     fun chime(): ShortArray {
-        val total = (3 * 0.7 * RATE).toInt()
+        val total = (3.2 * RATE).toInt()
         val out = ShortArray(total)
-        for (r in 0 until 3) {
-            for ((j, freq) in listOf(880.0, 660.0).withIndex()) {
-                val start = ((r * 0.7 + j * 0.32) * RATE).toInt()
-                val len = (0.32 * RATE).toInt()
-                val up = (0.05 * RATE).toInt()
-                for (k in 0 until len) {
-                    val idx = start + k
-                    if (idx >= total) break
-                    val env = if (k < up) k / up.toDouble() else 1.0 - (k - up) / (len - up).toDouble()
-                    val s = (sin(2 * PI * freq * k / RATE) * 0.3 * env * 32767).toInt()
-                    out[idx] = (out[idx] + s).coerceIn(-32768, 32767).toShort()
-                }
+        val notes = doubleArrayOf(523.25, 659.25, 783.99, 1046.5)
+        for ((n, freq) in notes.withIndex()) {
+            val start = ((n * 0.3) * RATE).toInt()
+            val len = (1.9 * RATE).toInt()
+            val up = (0.012 * RATE).toInt()
+            for (k in 0 until len) {
+                val idx = start + k
+                if (idx >= total) break
+                val env = if (k < up) k / up.toDouble() else Math.exp(-k.toDouble() / RATE * 3.6)
+                val tt = k.toDouble() / RATE
+                val v = (sin(2 * PI * freq * tt) * 0.22 + sin(2 * PI * freq * 2 * tt) * 0.06) * env
+                out[idx] = (out[idx] + (v * 32767).toInt()).coerceIn(-32768, 32767).toShort()
             }
         }
         return out

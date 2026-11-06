@@ -154,7 +154,7 @@
   <div id="ytPlayer"></div>
 </div>
 <audio id="localAudioPlayer" class="hidden"></audio>
-<button id="muteSongBtn" type="button" style="display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;padding:.7rem 1.4rem;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(20,20,30,.92);color:#fff;font:600 1rem/1 system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.45);cursor:pointer;">🔇 השתק שיר</button>
+<button id="muteSongBtn" type="button" style="display:none;position:fixed;left:50%;top:72px;transform:translateX(-50%);z-index:9999;padding:.55rem 1.2rem;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:rgba(20,20,30,.92);color:#fff;font:600 1rem/1 system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.45);cursor:pointer;">🔇 השתק שיר</button>
 
 <!-- ============ MAIN DASHBOARD ============ -->
 <main class="relative z-10 w-screen flex flex-col px-5 sm:px-6 py-6 sm:py-8 max-w-5xl mx-auto overflow-y-auto scrollbar-slim" style="min-height: var(--app-vh, 100dvh);">
@@ -1457,6 +1457,23 @@ function playSiren(onDone, forceDurationSec){
 let remindersFired = { hour:false, half:false };
 let reminderAutoHideTimer = null;
 
+/* Reminder sound: a soft harp-like arpeggio (4 rising plucked notes that ring out). */
+function playHarpArpeggio(ctx, startTime){
+  [523.25, 659.25, 783.99, 1046.5].forEach((freq, i)=>{
+    const t0 = startTime + i*0.3;
+    [[1, 0.22], [2, 0.06]].forEach(([mult, vol])=>{
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq*mult;
+      osc.connect(gain); gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.linearRampToValueAtTime(vol, t0+0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0+1.9);
+      osc.start(t0); osc.stop(t0+1.95);
+    });
+  });
+}
 function playDingDongOnce(ctx, startTime){
   [880, 660].forEach((freq, i)=>{
     const osc = ctx.createOscillator();
@@ -1510,13 +1527,12 @@ function playReminderChimeWithDucking(){
     localEl.volume = localOrigVol * 0.25;
   }
 
-  const repeats = 3, perRepeat = 0.7;
-  for(let r=0; r<repeats; r++) playDingDongOnce(ctx, ctx.currentTime + r*perRepeat);
+  playHarpArpeggio(ctx, ctx.currentTime);
 
   setTimeout(()=>{
     if(ytWasPlaying) fadeYtVolumeTo(ytOrigVol, 1200);
     if(localWasPlaying) fadeLocalVolumeTo(localEl, localOrigVol, 1200);
-  }, repeats*perRepeat*1000 + 200);
+  }, 3600);
 }
 
 function showReminderBanner(key){
