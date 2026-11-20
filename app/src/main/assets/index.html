@@ -143,6 +143,45 @@
   .date-row-wrap{ opacity:.85; }
 
   /* Clock size now scales fluidly via clamp() above — no fixed breakpoint override needed. */
+  /* ---- settings screen (refreshed) ---- */
+  .settings-card{ background: linear-gradient(170deg, #12101c 0%, #0b0a12 100%); border:1px solid rgba(226,192,115,0.22);
+    box-shadow: 0 30px 80px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.03) inset; }
+  .set-head{ padding:20px 22px 12px; flex:none; }
+  .set-body{ padding:6px 18px 14px; overflow-y:auto; flex:1 1 auto; }
+  .set-foot{ flex:none; padding:12px 18px 16px; display:flex; flex-direction:column; gap:8px;
+    border-top:1px solid rgba(255,255,255,.07); background: rgba(8,7,14,.9); }
+  .set-close{ width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.07); color:#f7e6b5; font-size:14px; border:none; cursor:pointer; }
+  .set-close:hover{ background:rgba(255,255,255,.14); }
+  .set-tabs{ display:flex; gap:4px; padding:4px; border-radius:14px; background:rgba(255,255,255,.05); overflow-x:auto; }
+  .set-tabs .tab-btn{ flex:1; text-align:center; padding:.55rem .6rem; border-radius:11px; font-size:.78rem; }
+  .set-tabs .tab-btn.active{ box-shadow:0 2px 10px rgba(226,192,115,.3); }
+  .set-section{ background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.07); border-radius:16px; padding:14px; margin-bottom:12px; }
+  .set-label{ display:block; font-size:.8rem; font-weight:600; color:#f7e6b5; margin-bottom:8px; opacity:.95; }
+  .set-sub{ font-size:.72rem; opacity:.65; margin:12px 0 6px; }
+  .siren-slider{ flex:1; accent-color:#e2c073; height:28px; }
+  .siren-preview-btn{ flex:none; padding:8px 14px; border-radius:12px; font-size:.78rem; font-weight:700; cursor:pointer;
+    background:transparent; border:1px solid rgba(226,192,115,.5); color:var(--gold-primary); }
+  .set-hint{ font-size:.68rem; line-height:1.55; opacity:.45; margin-top:8px; }
+  .set-gold-btn{ width:100%; margin-top:10px; padding:10px; border-radius:12px; border:none; font-weight:700; font-size:.8rem; background:var(--gold-primary); color:#1c132b; cursor:pointer; }
+  .set-save-btn{ width:100%; padding:13px; border-radius:14px; border:none; font-weight:800; font-size:.95rem; cursor:pointer;
+    background:linear-gradient(135deg,#f3dc9a,#e2c073 55%,#c99f4a); color:#1c132b; box-shadow:0 6px 20px rgba(226,192,115,.25); }
+  .set-test-btn{ width:100%; padding:10px; border-radius:12px; font-size:.78rem; font-weight:600; cursor:pointer;
+    background:transparent; border:1px solid rgba(226,192,115,.45); color:var(--gold-primary); }
+  .settings-card select, .settings-card input[type="number"], .settings-card input[type="url"], .settings-card input[type="text"]{
+    border-radius:12px; padding:.6rem .75rem; background:rgba(0,0,0,.28); }
+  .settings-card .radio-pill{ border-radius:12px; padding-top:.55rem; padding-bottom:.55rem; background:rgba(0,0,0,.2); }
+  .settings-card .radio-pill.selected{ background:var(--gold-primary); color:#1c132b; border-color:var(--gold-primary); font-weight:700; }
+  .toggle-track{ width:2.75rem; height:1.5rem; }
+  .play-row{ display:flex; align-items:center; flex-wrap:wrap; gap:6px; font-size:.78rem; padding:8px 10px; border-radius:12px;
+    background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.06); }
+  .play-row input{ width:3.6rem; text-align:center; padding:.35rem .25rem !important; }
+  .play-sep{ opacity:.4; margin:0 2px; }
+  .play-del{ margin-inline-start:auto; width:28px; height:28px; border-radius:50%; border:none; background:rgba(255,255,255,.08); color:#f7e6b5; cursor:pointer; font-size:12px; }
+  .play-del:hover{ background:rgba(220,80,80,.35); }
+  .add-play-btn{ margin-top:8px; width:100%; padding:9px; border-radius:12px; cursor:pointer; font-size:.78rem; font-weight:600;
+    background:transparent; border:1px dashed rgba(226,192,115,.5); color:var(--gold-primary); }
+  .add-play-btn:hover{ background:rgba(226,192,115,.08); }
+
 </style>
 </head>
 <body>
@@ -269,10 +308,6 @@
   </footer>
 </main>
 
-<div id="shabbatBadge" class="fixed bottom-4 right-4 z-20 hidden luxury-card rounded-full px-4 py-2 text-xs flex items-center gap-2 text-amber-100">
-  <span style="color:var(--gold-primary)">●</span> מצב שבת פעיל — השמע מושתק
-</div>
-
 <div id="reminderBanner" class="hidden fixed inset-x-4 top-6 z-50 max-w-md mx-auto">
   <div class="luxury-card rounded-2xl p-4">
     <div id="reminderBannerTitle" class="font-serif-luxury text-lg font-bold mb-2" style="color:var(--gold-light);"></div>
@@ -295,34 +330,37 @@
 
 <!-- ============ SETTINGS MODAL ============ -->
 <div id="settingsModal" class="fixed inset-0 z-40 hidden settings-modal items-center justify-center p-4">
-  <div id="settingsCard" class="settings-card rounded-3xl w-full max-w-lg max-h-[92vh] overflow-y-auto scrollbar-slim p-6">
-    <div class="flex items-center justify-between mb-5">
-      <h2 class="font-serif-luxury text-2xl font-bold text-amber-200">הגדרות שעון שבת</h2>
-      <button id="closeSettings" class="opacity-60 hover:opacity-100 text-2xl px-2 text-amber-100">×</button>
+  <div id="settingsCard" class="settings-card rounded-3xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden">
+    <div class="set-head">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-serif-luxury text-2xl font-bold gold-text-gradient">הגדרות</h2>
+      <button id="closeSettings" class="set-close" aria-label="סגור">✕</button>
     </div>
 
 
-    <div class="flex gap-1.5 mb-5 overflow-x-auto scrollbar-slim pb-1">
+    <div class="set-tabs">
       <div id="tabBtn-location" class="tab-btn active" data-tab="location">📍 מיקום</div>
       <div id="tabBtn-audio" class="tab-btn" data-tab="audio">🎵 שמע</div>
       <div id="tabBtn-reminders" class="tab-btn" data-tab="reminders">🔔 תזכורות</div>
       <div id="tabBtn-advanced" class="tab-btn" data-tab="advanced">⚙ מתקדם</div>
     </div>
+        </div>
+    <div class="set-body scrollbar-slim">
     <div id="tabPanel-location" class="tab-panel active">
-    <section class="mb-5">
-      <label class="block text-xs opacity-60 mb-1.5">עיר לסנכרון זמנים:</label>
+    <section class="set-section">
+      <label class="set-label">עיר לסנכרון זמנים:</label>
       <select id="citySelect" class="w-full rounded-xl px-3 py-2 text-sm"></select>
 
       <button id="gpsBtn" class="gps-btn mt-2">📍 בחירה לפי מיקום (GPS)</button>
       <div id="gpsStatus" class="text-[11px] opacity-50 mt-1 text-center"></div>
       <button id="useCityListBtn" class="hidden mt-1 w-full text-[11px] underline opacity-60 hover:opacity-100">בחר מרשימת ערים במקום זאת</button>
 
-      <button id="syncNowBtn" class="mt-2 w-full rounded-xl py-2 text-xs font-semibold" style="background:var(--gold-primary); color:#1c132b;">עדכן זמנים עכשיו</button>
+      <button id="syncNowBtn" class="set-gold-btn">⟳ עדכן זמנים עכשיו</button>
       <div id="syncStatus" class="text-[11px] opacity-50 mt-1 text-center"></div>
     </section>
 
-    <section class="mb-5">
-      <label class="block text-xs opacity-60 mb-1.5">מנהג הדלקת נרות (תוספת שבת):</label>
+    <section class="set-section">
+      <label class="set-label">מנהג הדלקת נרות (תוספת שבת):</label>
       <select id="candleOffsetSelect" class="w-full rounded-xl px-3 py-2 text-sm">
         <option value="20">20 דקות (מנהג כללי — ברירת מחדל)</option>
         <option value="40">40 דקות (מנהג ירושלים)</option>
@@ -331,41 +369,40 @@
       </select>
     </section>
 
-    <section class="mb-5">
+    <section class="set-section">
       <div id="terrainWarningNote" class="hidden rounded-xl bg-amber-900/20 border border-amber-500/30 p-3 mb-3 text-[11px] leading-relaxed text-amber-200">
         ⚠ אזור עם אי-ודאות הלכתית בחישוב זמנים (טופוגרפיה מורכבת) — מומלץ לוודא זמנים מול לוח זמנים מקומי ולתקן ידנית.
       </div>
-      <label class="block text-xs opacity-60 mb-1.5">תיקון ידני למיקום שלך (דקות, +/-):</label>
+      <label class="set-label">תיקון ידני למיקום שלך (דקות, +/-):</label>
       <input id="manualCorrectionInput" type="number" step="1" placeholder="0" class="w-full rounded-xl px-3 py-2 text-sm">
-      <p class="text-[10px] opacity-40 mt-1.5 leading-relaxed">מספר חיובי = מאחר את הזמנים, שלילי = מקדים. משפיע על הדלקת נרות, צאת שבת, וצאת שבת (ר״ת) יחד. השאר 0 אם אינך יודע ערך מדויק.</p>
+      <p class="set-hint">מספר חיובי = מאחר את הזמנים, שלילי = מקדים. משפיע על הדלקת נרות, צאת שבת, וצאת שבת (ר״ת) יחד. השאר 0 אם אינך יודע ערך מדויק.</p>
     </section>
 
-    <section class="mb-5">
-      <label class="block text-xs opacity-60 mb-1.5">שיטת חישוב צאת שבת (ר״ת):</label>
+    <section class="set-section">
+      <label class="set-label">שיטת חישוב צאת שבת (ר״ת):</label>
       <select id="rtMethodSelect" class="w-full rounded-xl px-3 py-2 text-sm">
         <option value="rt72">רגיל / רבינו תם (72 דקות אחרי שקיעה)</option>
         <option value="chazonish">חזון איש (90 דקות אחרי שקיעה)</option>
         <option value="mga">מגן אברהם (96 דקות אחרי שקיעה)</option>
         <option value="gra">גר״א / אופק ירושלים (58 דקות אחרי שקיעה)</option>
       </select>
-      <p class="text-[10px] opacity-40 mt-1.5 leading-relaxed">הערכה כללית לצורך לוח זמנים ביתי בלבד — אינה פסק הלכה. לשימוש הלכה למעשה יש להתייעץ עם רב.</p>
+      <p class="set-hint">הערכה כללית לצורך לוח זמנים ביתי בלבד — אינה פסק הלכה. לשימוש הלכה למעשה יש להתייעץ עם רב.</p>
     </section>
     </div>
 
     <div id="tabPanel-audio" class="tab-panel">
-    <section class="mb-5">
-      <label class="block text-xs opacity-60 mb-2">שיר לכניסת שבת:</label>
+    <section class="set-section">
+      <label class="set-label">שיר לכניסת שבת:</label>
       <div id="slot-friday-mount"></div>
-      <div class="flex items-center gap-2 text-xs opacity-80 mt-2">
-        <span>להשמיע</span>
-        <input id="fridaySongOffset" type="number" min="1" max="90" value="10" class="w-16 rounded-lg px-2 py-1 text-center">
-        <span>דקות לפני הדלקת נרות</span>
-      </div>
+      <div class="set-sub">מתי להשמיע (לפני הדלקת נרות):</div>
+      <div id="fridayPlaysList" class="flex flex-col gap-2"></div>
+      <button id="addFridayPlayBtn" type="button" class="add-play-btn">＋ הוסף זמן נוסף</button>
+      <p class="set-hint">אפשר להגדיר כמה זמנים. לדוגמה: 30 דקות לפני למשך 5 דקות, ועוד 10 דקות לפני עד סוף השיר. ריק או 0 במשך = השיר מושמע עד הסוף. אותם זמנים חלים גם על שירי ערב חג.</p>
     </section>
 
-    <section class="mb-5">
+    <section class="set-section">
       <div class="flex items-center justify-between">
-        <span class="text-xs opacity-60">צפירת כניסת שבת (טון רציף)</span>
+        <span class="set-label" style="margin:0">צפירת כניסת שבת (טון רציף)</span>
         <div id="sirenToggle" class="toggle-track w-11 h-6 rounded-full relative cursor-pointer">
           <div class="toggle-dot absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-white"></div>
         </div>
@@ -382,7 +419,7 @@
       </div>
 
       <div class="mt-3">
-        <label class="block text-[11px] opacity-60 mb-1.5">משך זמן הצפירה (מובנית):</label>
+        <label class="set-sub" style="margin-top:0">משך זמן הצפירה (מובנית):</label>
         <div class="flex gap-2">
           <div id="sirenDur15" class="radio-pill flex-1 text-center rounded-lg py-1.5 text-xs">15 שנ׳</div>
           <div id="sirenDur20" class="radio-pill flex-1 text-center rounded-lg py-1.5 text-xs">20 שנ׳</div>
@@ -391,24 +428,32 @@
         </div>
       </div>
 
-      <p class="text-[10px] opacity-40 mt-2 leading-relaxed">בסיום הצפירה, המערכת נכנסת אוטומטית ל"מצב שבת" (השתקה מלאה) עד מוצאי שבת. אם חל חג ביום שישי (כניסה ישירה לשבת), הצפירה תבוטל אוטומטית אותו שבוע.</p>
+      <div class="mt-3">
+        <label class="set-sub" style="margin-top:0">עוצמת הצפירה: <b id="sirenVolumeLabel" style="color:var(--gold-primary)">100%</b></label>
+        <div class="flex items-center gap-3">
+          <input id="sirenVolume" type="range" min="10" max="100" step="5" value="100" class="siren-slider">
+          <button id="sirenPreviewBtn" type="button" class="siren-preview-btn">▶ נסה</button>
+        </div>
+      </div>
+
+      <p class="set-hint">בסיום הצפירה, המערכת נכנסת אוטומטית ל"מצב שבת" (השתקה מלאה) עד מוצאי שבת. אם חל חג ביום שישי (כניסה ישירה לשבת), הצפירה תבוטל אוטומטית אותו שבוע.</p>
     </section>
 
-    <section class="mb-5">
-      <label class="block text-xs opacity-60 mb-2">שיר למוצאי שבת:</label>
+    <section class="set-section">
+      <label class="set-label">שיר למוצאי שבת:</label>
       <div id="slot-motzash-mount"></div>
-      <div class="text-[11px] opacity-60 mb-1.5 mt-2">מתי להשמיע:</div>
+      <div class="set-sub">מתי להשמיע:</div>
       <div class="flex gap-2">
         <div id="motzashRegular" class="radio-pill flex-1 text-center rounded-lg py-1.5 text-xs">צאת שבת</div>
         <div id="motzashRT" class="radio-pill flex-1 text-center rounded-lg py-1.5 text-xs">רבינו תם</div>
         <div id="motzashBoth" class="radio-pill flex-1 text-center rounded-lg py-1.5 text-xs">בשניהם</div>
       </div>
-      <p class="text-[10px] opacity-40 mt-2 leading-relaxed">אם שבת נכנסת ישירות לתוך חג (בלי הפסקה), שיר זה יידחה אוטומטית ויושמע רק במוצאי החג בפועל.</p>
+      <p class="set-hint">אם שבת נכנסת ישירות לתוך חג (בלי הפסקה), שיר זה יידחה אוטומטית ויושמע רק במוצאי החג בפועל.</p>
     </section>
 
-    <section class="mb-6">
+    <section class="set-section">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-xs opacity-60">שירים נפרדים לכניסת חגים</span>
+        <span class="set-label" style="margin:0">שירים נפרדים לכניסת חגים</span>
         <div id="erevChagToggle" class="toggle-track w-11 h-6 rounded-full relative cursor-pointer">
           <div class="toggle-dot absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-white"></div>
         </div>
@@ -418,21 +463,21 @@
     </div>
 
     <div id="tabPanel-reminders" class="tab-panel">
-    <section class="mb-6">
+    <section class="set-section">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-xs opacity-60">תזכורות לפני כניסת שבת</span>
+        <span class="set-label" style="margin:0">תזכורות לפני כניסת שבת</span>
         <div id="remindersToggle" class="toggle-track w-11 h-6 rounded-full relative cursor-pointer">
           <div class="toggle-dot absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-white"></div>
         </div>
       </div>
       <div id="reminder-hour-mount"></div>
       <div id="reminder-half-mount" class="mt-3"></div>
-      <p class="text-[10px] opacity-40 mt-2 leading-relaxed">באנר עם צליל דינג-דונג (כפוף להפעלת שמע) יופיע במסך הראשי; אם משיר מתנגן ברגע זה, הוא ינמיך זמנית וישוב לווליום המלא בסיום.</p>
+      <p class="set-hint">באנר עם צליל נבל רך (כפוף להפעלת שמע) יופיע במסך הראשי; אם משיר מתנגן ברגע זה, הוא ינמיך זמנית וישוב לווליום המלא בסיום.</p>
     </section>
 
-    <section class="mb-6">
+    <section class="set-section">
       <div class="flex items-center justify-between">
-        <span class="text-xs opacity-60">הצג ווידג'ט ספירה לאחור</span>
+        <span class="set-label" style="margin:0">הצג ווידג'ט ספירה לאחור</span>
         <div id="countdownToggle" class="toggle-track w-11 h-6 rounded-full relative cursor-pointer">
           <div class="toggle-dot absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-white"></div>
         </div>
@@ -441,20 +486,21 @@
     </div>
 
     <div id="tabPanel-advanced" class="tab-panel">
-    <section class="mb-6">
+    <section class="set-section">
       <div class="flex items-center justify-between mb-2">
-        <span class="text-xs opacity-60">מצב מערכת (לאבחון)</span>
+        <span class="set-label" style="margin:0">מצב מערכת (לאבחון)</span>
         <button id="refreshDiagnosticsBtn" class="text-[11px] underline opacity-60 hover:opacity-100">רענן</button>
       </div>
       <div id="diagnosticsBox" class="rounded-xl bg-white/[0.03] border border-white/10 p-3 text-[11px] leading-relaxed opacity-80 space-y-1"></div>
     </section>
     </div>
 
-    <div class="flex flex-col gap-2">
-      <button id="saveSettingsBtn" class="w-full rounded-xl py-3 font-bold text-sm" style="background:var(--gold-primary); color:#1c132b;">שמור הגדרות</button>
-      <button id="testModeBtn" class="w-full rounded-xl py-2.5 font-medium text-xs border" style="border-color:var(--gold-primary); color:var(--gold-primary);">הרץ מצב בדיקה (בודק את כל קובצי השמע)</button>
     </div>
-    <div id="testModeStatus" class="text-xs text-center opacity-70 mt-2 font-semibold" style="color:var(--gold-primary);"></div>
+    <div class="set-foot">
+      <button id="saveSettingsBtn" class="set-save-btn">שמור הגדרות</button>
+      <button id="testModeBtn" class="set-test-btn">▶ הרץ מצב בדיקה</button>
+      <div id="testModeStatus" class="text-xs text-center opacity-80 font-semibold" style="color:var(--gold-primary);"></div>
+    </div>
   </div>
 </div>
 
@@ -537,10 +583,12 @@ const DEFAULT_SETTINGS = {
   fridaySongId: "",
   fridaySongFilename: "",
   fridaySongOffset: 10,
+  fridaySongPlays: [{ offset: 10, dur: 0 }],
   sirenEnabled: true,
   sirenType: "builtin", // builtin | url | local
   sirenUrl: "",
   sirenDuration: 15,
+  sirenVolume: 100,
   motzashSongSource: "youtube",
   motzashSongId: "",
   motzashSongFilename: "",
@@ -566,13 +614,15 @@ let times = {
   nextErevChag:null, chagExitTime:null
 };
 let timesAreStale = true;
+let lastFetchOk = 0, lastNextWeekTry = 0;
+let songStopTimer = null;
 let ytPlayer = null, ytReady = false, pendingYtAction = null;
 let audioCtx = null;
 let shabbatMuteActive = false;
 let simRunning = false;
 let refreshedAfterShabbat = false;
-let firedFlags = { fridaySong:false, siren:false, motzashRegular:false, motzashRT:false };
-let erevChagFired = false;
+let firedFlags = { fridayPlays:{}, siren:false, motzashRegular:false, motzashRT:false };
+let erevChagFired = {};
 let chagExitFired = false;
 let wakeLock = null;
 let lastHebDateKey = null;
@@ -583,12 +633,13 @@ let lastHebDateKey = null;
 function loadSettings(){
   try{
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if(!raw) return {...DEFAULT_SETTINGS, chagSongs: defaultChagSongs(), reminders: defaultReminders()};
+    if(!raw) return {...DEFAULT_SETTINGS, fridaySongPlays: [{ offset: 10, dur: 0 }], chagSongs: defaultChagSongs(), reminders: defaultReminders()};
     const parsed = JSON.parse(raw);
     const pr = parsed.reminders || {};
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
+      fridaySongPlays: normalizePlays(parsed.fridaySongPlays, parsed.fridaySongOffset),
       chagSongs: { ...defaultChagSongs(), ...(parsed.chagSongs || {}) },
       reminders: {
         enabled: pr.enabled !== false,
@@ -963,13 +1014,25 @@ async function fetchWeeklyTimes(){
   try{
     const offset = settings.candleOffset || 20;
     const shabbatUrl = `https://www.hebcal.com/shabbat?cfg=json&geo=pos&latitude=${city.lat}&longitude=${city.lng}&tzid=${encodeURIComponent(city.tzid)}&M=on&b=${offset}&lg=h${elevParams(city)}`;
-    const res = await fetch(shabbatUrl);
-    const data = await res.json();
-    const items = data.items || [];
+    let res = await fetch(shabbatUrl);
+    let data = await res.json();
+    let items = data.items || [];
 
-    const candlesItem = items.find(i=>i.category==="candles");
-    const havdalahItem = items.find(i=>i.category==="havdalah");
-    const parashaItem = items.find(i=>i.category==="parashat");
+    let candlesItem = items.find(i=>i.category==="candles");
+    let havdalahItem = items.find(i=>i.category==="havdalah");
+    let parashaItem = items.find(i=>i.category==="parashat");
+
+    // Hebcal's "this week" only flips on Sunday 00:00, so on Saturday night it still returns the
+    // Shabbat that just ended. Once that havdalah is in the past, ask for tomorrow's week instead.
+    if(havdalahItem && new Date(havdalahItem.date).getTime() <= Date.now()){
+      const t = new Date(Date.now() + 24*3600*1000);
+      res = await fetch(shabbatUrl + `&gy=${t.getFullYear()}&gm=${t.getMonth()+1}&gd=${t.getDate()}`);
+      data = await res.json();
+      items = data.items || [];
+      candlesItem = items.find(i=>i.category==="candles");
+      havdalahItem = items.find(i=>i.category==="havdalah");
+      parashaItem = items.find(i=>i.category==="parashat");
+    }
 
     if(!candlesItem || !havdalahItem) throw new Error("no items");
 
@@ -1004,6 +1067,7 @@ async function fetchWeeklyTimes(){
     times.rabbeinuTam = pickRabbeinuTam(rtCalc, times.havdalah, prevRT);
 
     timesAreStale = false;
+    lastFetchOk = Date.now();
     resetWeekFlags();
     renderTimes();
     setStatusDot("ok");
@@ -1107,7 +1171,7 @@ async function fetchUpcomingErevChag(city){
     if(candidate){
       candidate.holidayKey = matchHolidayKey(holidayItems, candidate.date);
       if(!times.nextErevChag || times.nextErevChag.date.getTime() !== candidate.date.getTime()){
-        erevChagFired = false;
+        erevChagFired = {};
       }
     }
     times.nextErevChag = candidate;
@@ -1182,8 +1246,23 @@ function isNearCriticalTrigger(now){
   return points.some(p => Math.abs(now - p) < 5*60000);
 }
 
+/* Automatic refresh (startup / every 6h / when the screen wakes). Skipped while we're between this
+   week's havdalah and its last Motzash event (Rabbeinu Tam / chag exit): the current week's times
+   must stay in place until those songs have played. */
+function autoFetch(){
+  const nowMs = Date.now();
+  if(times.havdalah && times.candleLighting){
+    const le = (times.chagExitTime || times.rabbeinuTam || times.havdalah).getTime();
+    if(nowMs >= times.havdalah.getTime() && nowMs < le + 3000) return;
+  }
+  fetchWeeklyTimes();
+}
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState === "visible" && Date.now() - lastFetchOk > 30*60000) autoFetch();
+});
+
 function resetWeekFlags(){
-  firedFlags = { fridaySong:false, siren:false, motzashRegular:false, motzashRT:false };
+  firedFlags = { fridayPlays:{}, siren:false, motzashRegular:false, motzashRT:false };
   refreshedAfterShabbat = false;
   remindersFired = { hour:false, half:false };
 }
@@ -1330,7 +1409,7 @@ function fadeInLocalAudio(el, duration=2500){
     if(i>=steps) clearInterval(interval);
   }, duration/steps);
 }
-async function playLocalAudio(dbSlot, onEnded){
+async function playLocalAudio(dbSlot, onEnded, fixedVol){
   try{
     const rec = await loadAudioFile(dbSlot);
     if(!rec || !rec.blob) return false;
@@ -1340,9 +1419,9 @@ async function playLocalAudio(dbSlot, onEnded){
     const el = document.getElementById("localAudioPlayer");
     el.pause();
     el.src = url;
-    el.volume = 0;
+    el.volume = fixedVol ? fixedVol : 0;
     el.onended = ()=>{ if(onEnded) onEnded(); };
-    el.play().then(()=>{ fadeInLocalAudio(el, 2500); }).catch(()=>{ /* still silently allowed to fail like any autoplay */ });
+    el.play().then(()=>{ if(!fixedVol) fadeInLocalAudio(el, 2500); }).catch(()=>{ /* still silently allowed to fail like any autoplay */ });
     return true;
   }catch(e){ return false; }
 }
@@ -1356,11 +1435,21 @@ function stopLocalAudio(){
    to know which. */
 function playSongSlot(slotValue){
   if(!slotValue) return;
+  clearTimeout(songStopTimer); songStopTimer = null;
   if(slotValue.source === "local"){ songSession = true; songSessionAt = Date.now(); playLocalAudio(slotValue.dbSlot || slotValue.id); }
   else if(slotValue.id){ songSession = true; songSessionAt = Date.now(); playYouTube(slotValue.id); }
+  if(slotValue.capSec > 0){
+    // play only for a limited time, with a short fade-out at the end
+    songStopTimer = setTimeout(()=>{
+      try{ const el = document.getElementById("localAudioPlayer"); if(el && !el.paused) fadeLocalVolumeTo(el, 0, 1500); }catch(e){}
+      try{ if(ytReady) fadeYtVolumeTo(0, 1500); }catch(e){}
+      songStopTimer = setTimeout(()=>{ songStopTimer = null; stopAllPlayback(); }, 1600);
+    }, Math.max(0, slotValue.capSec*1000 - 1500));
+  }
   updateMuteBtn();
 }
 function stopAllPlayback(){
+  clearTimeout(songStopTimer); songStopTimer = null;
   stopYouTube();
   stopLocalAudio();
   songSession = false;
@@ -1404,6 +1493,7 @@ function ensureAudioCtx(){
   if(audioCtx.state === "suspended") audioCtx.resume();
   return audioCtx;
 }
+function sirenVol(){ return Math.max(0.1, Math.min(1, (Number(settings.sirenVolume) || 100) / 100)); }
 function playBuiltinSiren(durationSec){
   durationSec = durationSec || settings.sirenDuration || 15;
   const ctx = ensureAudioCtx();
@@ -1416,8 +1506,9 @@ function playBuiltinSiren(durationSec){
   const now = ctx.currentTime;
   const fade = 0.25;
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.linearRampToValueAtTime(0.32, now + fade);
-  gain.gain.setValueAtTime(0.32, now + durationSec - fade);
+  const peak = 0.95 * sirenVol();
+  gain.gain.linearRampToValueAtTime(peak, now + fade);
+  gain.gain.setValueAtTime(peak, now + durationSec - fade);
   gain.gain.linearRampToValueAtTime(0.0001, now + durationSec);
 
   osc.start(now);
@@ -1427,7 +1518,7 @@ function playBuiltinSiren(durationSec){
 function playSiren(onDone, forceDurationSec){
   const durationSec = forceDurationSec || settings.sirenDuration || 15;
   if(settings.sirenType === "local"){
-    playLocalAudio("siren", onDone).then(started=>{
+    playLocalAudio("siren", onDone, sirenVol()).then(started=>{
       if(!started){
         playBuiltinSiren(durationSec);
         setTimeout(()=>{ if(onDone) onDone(); }, durationSec*1000 + 300);
@@ -1438,7 +1529,7 @@ function playSiren(onDone, forceDurationSec){
   } else if(settings.sirenType === "url" && settings.sirenUrl){
     try{
       const a = new Audio(settings.sirenUrl);
-      a.volume = 1.0;
+      a.volume = sirenVol();
       a.addEventListener("ended", ()=>{ if(onDone) onDone(); });
       a.play().then(()=>{
         if(forceDurationSec){ setTimeout(()=>{ a.pause(); if(onDone) onDone(); }, forceDurationSec*1000); }
@@ -1561,7 +1652,6 @@ function setShabbatGreetingVisible(visible){
 }
 function setShabbatVisual(active){
   document.getElementById("bgLayer").classList.toggle("shabbat-active", active);
-  document.getElementById("shabbatBadge").classList.toggle("hidden", !active);
 }
 function enterShabbatMute(){ shabbatMuteActive = true; stopAllPlayback(); setShabbatVisual(true); }
 function exitShabbatMute(){ shabbatMuteActive = false; setShabbatVisual(false); }
@@ -1626,6 +1716,35 @@ function updateCountdown(now){
   document.getElementById("countdownLabel").textContent = label;
 }
 
+/* Song timing "games": settings.fridaySongPlays is a list of { offset, dur } — start `offset` minutes
+   before candle-lighting and play for `dur` minutes (0 = the whole song). Returns the play that is due
+   right now (if several are overdue, e.g. the page was opened late, only the latest one plays). */
+function normalizePlays(list, fallbackOffset){
+  const out = [];
+  (Array.isArray(list) ? list : []).forEach(p=>{
+    const offset = Math.round(Number(p && p.offset));
+    const dur = Math.round(Number(p && p.dur)) || 0;
+    if(offset >= 1 && offset <= 240) out.push({ offset, dur: Math.max(0, Math.min(240, dur)) });
+  });
+  if(!out.length) out.push({ offset: fallbackOffset || 10, dur: 0 });
+  out.sort((a,b)=> b.offset - a.offset);
+  return out;
+}
+function dueSongPlay(plays, fired, endTime, now){
+  let pick = null;
+  (plays || []).forEach((p, i)=>{
+    if(fired[i]) return;
+    const at = endTime.getTime() - p.offset*60000;
+    if(now.getTime() >= at && now.getTime() < endTime.getTime()){
+      fired[i] = true;
+      const capSec = p.dur > 0 ? Math.round(p.dur*60 - (now.getTime() - at)/1000) : 0;
+      if(p.dur > 0 && capSec <= 0) return;
+      if(!pick || p.offset < pick.offset) pick = { offset: p.offset, capSec };
+    }
+  });
+  return pick;
+}
+
 function checkScheduledEvents(now){
   if(!times.candleLighting) return;
 
@@ -1642,14 +1761,11 @@ function checkScheduledEvents(now){
     }
   }
 
-  if(!firedFlags.fridaySong){
+  {
     const fridaySlot = getSlotValue(SONG_SLOTS[0]);
     if(fridaySlot && (fridaySlot.id || fridaySlot.source === "local")){
-      const triggerAt = new Date(times.candleLighting.getTime() - settings.fridaySongOffset*60000);
-      if(now >= triggerAt && now < times.candleLighting){
-        firedFlags.fridaySong = true;
-        playSongSlot({ ...fridaySlot, dbSlot:"friday" });
-      }
+      const due = dueSongPlay(settings.fridaySongPlays, firedFlags.fridayPlays, times.candleLighting, now);
+      if(due) playSongSlot({ ...fridaySlot, dbSlot:"friday", capSec: due.capSec });
     }
   }
 
@@ -1694,21 +1810,20 @@ function checkScheduledEvents(now){
   }
 
   // Erev-chag songs (one of 5, matched to the specific upcoming holiday)
-  if(!erevChagFired && settings.erevChagEnabled && times.nextErevChag && times.nextErevChag.holidayKey){
+  if(settings.erevChagEnabled && times.nextErevChag && times.nextErevChag.holidayKey){
     const chagSlot = settings.chagSongs[times.nextErevChag.holidayKey];
     if(chagSlot && (chagSlot.id || chagSlot.source === "local")){
-      const triggerAt = new Date(times.nextErevChag.date.getTime() - settings.fridaySongOffset*60000);
-      if(now >= triggerAt && now < times.nextErevChag.date){
-        erevChagFired = true;
-        playSongSlot({ ...chagSlot, dbSlot:"chag_"+times.nextErevChag.holidayKey });
-      }
+      const due = dueSongPlay(settings.fridaySongPlays, erevChagFired, times.nextErevChag.date, now);
+      if(due) playSongSlot({ ...chagSlot, dbSlot:"chag_"+times.nextErevChag.holidayKey, capSec: due.capSec });
     }
   }
 
+  // Once the last Motzash event of the week has passed, load next week's times right away and keep
+  // retrying (every 30s) until the new week's candle-lighting is actually in the future.
   const lastExit = times.chagExitTime || times.rabbeinuTam || times.havdalah;
-  if(lastExit && now >= lastExit && !refreshedAfterShabbat){
-    refreshedAfterShabbat = true;
-    setTimeout(fetchWeeklyTimes, 3000);
+  if(lastExit && now.getTime() >= lastExit.getTime() + 3000 && Date.now() - lastNextWeekTry > 30000){
+    lastNextWeekTry = Date.now();
+    fetchWeeklyTimes();
   }
 }
 
@@ -1966,6 +2081,33 @@ function populateCitySelect(){
   };
 }
 
+function renderPlayRows(plays){
+  const box = document.getElementById("fridayPlaysList");
+  box.innerHTML = "";
+  normalizePlays(plays).forEach(p=> addPlayRow(p));
+}
+function addPlayRow(p){
+  const box = document.getElementById("fridayPlaysList");
+  const row = document.createElement("div");
+  row.className = "play-row";
+  row.innerHTML =
+    '<span>התחל</span><input class="play-offset" type="number" inputmode="numeric" min="1" max="240" value="'+(p.offset||10)+'">' +
+    '<span>דק׳ לפני</span><span class="play-sep">•</span><span>נגן</span>' +
+    '<input class="play-dur" type="number" inputmode="numeric" min="0" max="240" placeholder="הכל" value="'+(p.dur>0?p.dur:"")+'">' +
+    '<span>דק׳</span><button type="button" class="play-del" title="הסר">✕</button>';
+  row.querySelector(".play-del").onclick = ()=>{
+    if(box.querySelectorAll(".play-row").length > 1) row.remove();
+  };
+  box.appendChild(row);
+}
+function readPlayRows(){
+  const rows = [...document.querySelectorAll("#fridayPlaysList .play-row")].map(r=>({
+    offset: parseInt(r.querySelector(".play-offset").value,10),
+    dur: parseInt(r.querySelector(".play-dur").value,10) || 0
+  }));
+  return normalizePlays(rows, 10);
+}
+
 function renderSettingsForm(){
   populateCitySelect();
   updateDiagnostics();
@@ -1975,7 +2117,7 @@ function renderSettingsForm(){
   document.getElementById("terrainWarningNote").classList.toggle("hidden", !getActiveCity().uncertainTerrain);
   applyLocationModeUI();
   document.getElementById("rtMethodSelect").value = settings.rtMethod;
-  document.getElementById("fridaySongOffset").value = settings.fridaySongOffset;
+  renderPlayRows(settings.fridaySongPlays);
   document.getElementById("sirenUrlInput").value = settings.sirenUrl;
 
   document.getElementById("sirenToggle").classList.toggle("on", settings.sirenEnabled);
@@ -1987,6 +2129,9 @@ function renderSettingsForm(){
   loadAudioFile("siren").then(rec=>{
     document.getElementById("sirenFileStatus").textContent = rec ? ("קובץ נטען: " + rec.filename) : "לא הועלה קובץ";
   }).catch(()=>{});
+
+  document.getElementById("sirenVolume").value = Math.round(sirenVol()*100);
+  document.getElementById("sirenVolumeLabel").textContent = Math.round(sirenVol()*100) + "%";
 
   const durMap = {15:"sirenDur15", 20:"sirenDur20", 25:"sirenDur25", 30:"sirenDur30"};
   Object.values(durMap).forEach(id=>document.getElementById(id).classList.remove("selected"));
@@ -2093,12 +2238,24 @@ function bindSettingsEvents(){
     fetchWeeklyTimes();
   };
 
+  document.getElementById("sirenVolume").addEventListener("input", e=>{
+    document.getElementById("sirenVolumeLabel").textContent = e.target.value + "%";
+  });
+  document.getElementById("sirenPreviewBtn").onclick = ()=>{
+    // plays 3 seconds at the slider's volume without saving it
+    const prev = settings.sirenVolume;
+    settings.sirenVolume = parseInt(document.getElementById("sirenVolume").value,10) || 100;
+    try{ stopAllPlayback(); playSiren(null, 3); }finally{ settings.sirenVolume = prev; }
+  };
+  document.getElementById("addFridayPlayBtn").onclick = ()=> addPlayRow({ offset:10, dur:0 });
+
   document.getElementById("saveSettingsBtn").onclick = ()=>{
     settings.cityIndex = parseInt(document.getElementById("citySelect").value,10);
     settings.candleOffset = parseInt(document.getElementById("candleOffsetSelect").value,10) || 20;
     settings.manualCorrectionMinutes = parseInt(document.getElementById("manualCorrectionInput").value,10) || 0;
     settings.rtMethod = document.getElementById("rtMethodSelect").value;
-    settings.fridaySongOffset = parseInt(document.getElementById("fridaySongOffset").value,10) || 10;
+    settings.fridaySongPlays = readPlayRows();
+    settings.fridaySongOffset = settings.fridaySongPlays[settings.fridaySongPlays.length-1].offset;
 
     settings.sirenEnabled = document.getElementById("sirenToggle").classList.contains("on");
     settings.sirenType = document.getElementById("sirenBuiltin").classList.contains("selected") ? "builtin"
@@ -2111,6 +2268,7 @@ function bindSettingsEvents(){
       if(document.getElementById(id).classList.contains("selected")) chosenDur = parseInt(val,10);
     }
     settings.sirenDuration = chosenDur;
+    settings.sirenVolume = Math.max(10, Math.min(100, parseInt(document.getElementById("sirenVolume").value,10) || 100));
 
     settings.motzashTiming = document.getElementById("motzashRT").classList.contains("selected") ? "rt"
                             : document.getElementById("motzashBoth").classList.contains("selected") ? "both"
@@ -2160,11 +2318,11 @@ function init(){
     setStatusDot("stale");
   }
 
-  fetchWeeklyTimes();
+  autoFetch();
   requestWakeLock();
   setInterval(tick, 1000);
   tick();
-  setInterval(()=>{ if(!isNearCriticalTrigger(new Date())) fetchWeeklyTimes(); }, 6*3600*1000);
+  setInterval(()=>{ if(!isNearCriticalTrigger(new Date())) autoFetch(); }, 3*3600*1000);
 }
 
 document.addEventListener("DOMContentLoaded", init);

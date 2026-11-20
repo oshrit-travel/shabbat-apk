@@ -28,7 +28,7 @@ class Bridge(private val ctx: Context) {
     fun playSlot(slot: String, cap: Int) = start("song", slot, 0, cap, "שיר", "")
 
     @JavascriptInterface
-    fun playSiren(slot: String, dur: Int, cap: Int) = start("siren", slot, dur, cap, "צפירה", "")
+    fun playSiren(slot: String, dur: Int, cap: Int, vol: Double) = start("siren", slot, dur, cap, "צפירה", "", vol.toFloat())
 
     @JavascriptInterface
     fun chimeNow() = start("chime", "", 0, 0, "תזכורת", "")
@@ -48,11 +48,11 @@ class Bridge(private val ctx: Context) {
         }
     }
 
-    private fun start(kind: String, slot: String, dur: Int, cap: Int, title: String, body: String) {
+    private fun start(kind: String, slot: String, dur: Int, cap: Int, title: String, body: String, vol: Float = 1f) {
         val i = Intent(ctx, PlayerService::class.java)
             .putExtra("kind", kind).putExtra("slot", slot)
             .putExtra("dur", if (dur > 0) dur else 15).putExtra("cap", cap)
-            .putExtra("title", title).putExtra("body", body)
+            .putExtra("title", title).putExtra("body", body).putExtra("vol", vol)
         try { ContextCompat.startForegroundService(ctx, i) } catch (_: Exception) {}
     }
 }

@@ -57,17 +57,18 @@ class PlayerService : Service() {
         val slot = intent?.getStringExtra("slot").orEmpty()
         val dur = intent?.getIntExtra("dur", 15) ?: 15
         val cap = intent?.getIntExtra("cap", 0) ?: 0
+        val vol = (intent?.getFloatExtra("vol", 1f) ?: 1f).coerceIn(0.05f, 1f)
 
         when (kind) {
             "song" -> {
                 stopAllSound()
                 val f = AudioStore.fileIfExists(this, slot)
-                if (f != null) playFile(f, 0, true)
+                if (f != null) playFile(f, cap, true)
             }
             "siren" -> {
                 stopAllSound()
                 val f = AudioStore.fileIfExists(this, slot)
-                if (f != null) playFile(f, cap, false) else playSiren(dur)
+                if (f != null) playFile(f, cap, false, vol) else playSiren(dur, vol)
             }
             "chime" -> playChime()
             "refresh" -> holdUntil = System.currentTimeMillis() + 3 * 60_000L
@@ -82,7 +83,7 @@ class PlayerService : Service() {
         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
         .build()
 
-    private fun playFile(file: File, capSec: Int, fade: Boolean) {
+    private fun playFile(file: File, capSec: Int, fade: Boolean, vol: Float = 1f) {
         try {
             val mp = MediaPlayer()
             mp.setAudioAttributes(attrs)
@@ -90,12 +91,20 @@ class PlayerService : Service() {
             mp.setOnCompletionListener { stopMedia(); scheduleFinishCheck() }
             mp.setOnErrorListener { _, _, _ -> stopMedia(); scheduleFinishCheck(); true }
             mp.prepare()
-            mp.setVolume(if (fade) 0f else 1f, if (fade) 0f else 1f)
+            mp.setVolume(if (fade) 0f else vol, if (fade) 0f else vol)
             mp.start()
             player = mp
             songPlaying = fade
             if (fade) fadeIn(mp, 2500)
             if (capSec > 0) {
+                if (fade && capSec > 3) {
+                    // gentle fade-out over the last 2 seconds of a time-limited song
+                    for (i in 1..10) {
+                        handler.postDelayed({
+                            try { if (player === mp) mp.setVolume(1f - i / 10f, 1f - i / 10f) } catch (_: Exception) {}
+                        }, capSec * 1000L - 2000L + i * 200L - 200L)
+                    }
+                }
                 val r = Runnable { stopMedia(); scheduleFinishCheck() }
                 capRunnable = r
                 handler.postDelayed(r, capSec * 1000L)
@@ -139,9 +148,9 @@ class PlayerService : Service() {
         return t
     }
 
-    private fun playSiren(sec: Int) {
+    private fun playSiren(sec: Int, vol: Float = 1f) {
         try {
-            val t = makeTrack(Synth.siren(sec))
+            val t = makeTrack(Synth.siren(sec, vol))
             siren = t
             t.play()
             handler.postDelayed({

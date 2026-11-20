@@ -24,16 +24,18 @@
     if (!v) return;
     if (v.source === 'local') {
       if (inSched) return;
-      try { B.playSlot(String(v.dbSlot || v.id), 0); } catch (e) {}
+      try { B.playSlot(String(v.dbSlot || v.id), v.capSec || 0); } catch (e) {}
       return;
     }
     return origPlaySong.apply(this, arguments); // YouTube: foreground only
   };
 
+  function sirenVol() { return Math.max(0.1, Math.min(1, (Number(settings.sirenVolume) || 100) / 100)); }
+
   window.playSiren = function (done, force) {
     var dur = force || settings.sirenDuration || 15;
     if (!inSched) {
-      try { B.playSiren(settings.sirenType === 'local' ? 'siren' : '', dur, force || 0); } catch (e) {}
+      try { B.playSiren(settings.sirenType === 'local' ? 'siren' : '', dur, force || 0, sirenVol()); } catch (e) {}
     }
     setTimeout(function () { if (done) done(); }, dur * 1000 + 300);
   };
@@ -56,7 +58,10 @@
     if (!t || !t.candleLighting) return null;
     var ev = [], now = Date.now(), unsupported = false;
     var c = t.candleLighting.getTime();
-    var off = (settings.fridaySongOffset || 0) * 60000;
+    var plays = (settings.fridaySongPlays && settings.fridaySongPlays.length) ? settings.fridaySongPlays : [{ offset: settings.fridaySongOffset || 10, dur: 0 }];
+    function addSongPlays(endTs, slot, title, body) {
+      plays.forEach(function (p) { add(endTs - p.offset * 60000, { kind: 'song', slot: slot, cap: p.dur > 0 ? p.dur * 60 : 0, title: title, body: body }); });
+    }
     function add(ts, o) { if (ts && ts > now + 1500) { o.t = ts; ev.push(o); } }
 
     if (settings.reminders && settings.reminders.enabled) {
@@ -72,13 +77,13 @@
     }
 
     var fr = getSlotValue(SONG_SLOTS[0]);
-    if (fr && fr.source === 'local') add(c - off, { kind: 'song', slot: 'friday', title: 'שיר כניסת שבת', body: 'שבת שלום' });
+    if (fr && fr.source === 'local') addSongPlays(c, 'friday', 'שיר כניסת שבת', 'שבת שלום');
     else if (fr && fr.id) unsupported = true;
 
     if (settings.sirenEnabled && !t.fridayIsYomTov) {
       var dur = settings.sirenDuration || 15, isLocal = settings.sirenType === 'local';
       if (settings.sirenType === 'url') unsupported = true;
-      add(c, { kind: 'siren', slot: isLocal ? 'siren' : '', dur: dur, cap: isLocal ? dur : 0, title: 'כניסת שבת', body: 'שבת שלום' });
+      add(c, { kind: 'siren', slot: isLocal ? 'siren' : '', dur: dur, vol: sirenVol(), cap: isLocal ? dur : 0, title: 'כניסת שבת', body: 'שבת שלום' });
     }
 
     var mo = getSlotValue(SONG_SLOTS[1]);
@@ -93,9 +98,13 @@
 
     if (settings.erevChagEnabled && t.nextErevChag && t.nextErevChag.holidayKey) {
       var key = t.nextErevChag.holidayKey, cs = settings.chagSongs[key];
-      if (cs && cs.source === 'local') add(t.nextErevChag.date.getTime() - off, { kind: 'song', slot: 'chag_' + key, title: 'ערב חג', body: 'חג שמח' });
+      if (cs && cs.source === 'local') addSongPlays(t.nextErevChag.date.getTime(), 'chag_' + key, 'ערב חג', 'חג שמח');
       else if (cs && cs.id) unsupported = true;
     }
+
+    // wake the screen right after the last Motzash event so the page loads next week's times
+    var lastExit = t.chagExitTime || t.rabbeinuTam || t.havdalah;
+    if (lastExit) add(lastExit.getTime() + 90000, { kind: 'refresh', title: 'מעדכן זמני שבת', body: 'טוען את הזמנים לשבוע הבא' });
 
     if (unsupported && !warned) {
       warned = true;

@@ -7,7 +7,8 @@ import kotlin.math.sin
 object Synth {
     const val RATE = 44100
 
-    fun siren(seconds: Int): ShortArray {
+    fun siren(seconds: Int, volume: Float = 1f): ShortArray {
+        val amp = 0.95 * volume.coerceIn(0.05f, 1f)
         val n = seconds * RATE
         val fade = (0.25 * RATE).toInt()
         val out = ShortArray(n)
@@ -17,7 +18,7 @@ object Synth {
                 i > n - fade -> (n - i) / fade.toDouble()
                 else -> 1.0
             }
-            out[i] = (sin(2 * PI * 640.0 * i / RATE) * 0.32 * env * 32767).toInt().toShort()
+            out[i] = (sin(2 * PI * 640.0 * i / RATE) * amp * env * 32767).toInt().toShort()
         }
         return out
     }

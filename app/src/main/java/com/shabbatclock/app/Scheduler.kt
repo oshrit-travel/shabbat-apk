@@ -57,6 +57,7 @@ object Scheduler {
                 .putExtra("slot", o.optString("slot"))
                 .putExtra("dur", o.optInt("dur", 15))
                 .putExtra("cap", o.optInt("cap", 0))
+                .putExtra("vol", o.optDouble("vol", 1.0).toFloat())
                 .putExtra("title", o.optString("title"))
                 .putExtra("body", o.optString("body"))
             am.setAlarmClock(AlarmManager.AlarmClockInfo(t, showIntent(ctx)), alarmIntent(ctx, i, extras))
